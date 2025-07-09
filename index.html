@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente de Vendas IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mobile-shell { max-width: 420px; height: 800px; background-color: #111; border-radius: 40px; padding: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 10px #111; margin: 2rem auto; }
+        .mobile-screen { width: 100%; height: 100%; background-color: #f7f8fa; border-radius: 25px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        .screen { display: none; flex-grow: 1; overflow-y: auto; background-color: #f7f8fa; }
+        .screen.active { display: flex; flex-direction: column; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        /* Estilo para o interruptor (toggle switch) */
+        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="mobile-shell">
+        <div class="mobile-screen">
+            <!-- Tela de Carregamento Inicial -->
+            <div id="loading-screen" class="screen active items-center justify-center">
+                <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+            
+            <!-- Tela de Configuração Necessária -->
+            <div id="config-needed-screen" class="screen p-6 justify-center items-center text-center">
+                <div class="w-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-800">Configuração Necessária</h1>
+                    <p class="text-gray-600 mt-2">
+                        Para que a aplicação funcione, você precisa de colar as suas credenciais do Firebase no código.
+                    </p>
+                    <p class="text-sm text-gray-500 mt-4 bg-gray-100 p-3 rounded-lg">
+                        Abra o ficheiro <code>index.html</code>, encontre o comentário <code>// TODO: COLE SUAS CONFIGURAÇÕES DO FIREBASE AQUI</code> e substitua o objeto de exemplo pelas suas credenciais.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tela de Login -->
+            <div id="login-screen" class="screen p-6 justify-center">
+                <div class="w-full">
+                    <h1 class="text-3xl font-bold text-gray-800 text-center">Bem-vindo!</h1>
+                    <p class="text-gray-500 text-center mb-8">Aceda ao seu assistente de vendas</p>
+                    <div id="login-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert"></div>
+                    <input id="login-email" type="email" placeholder="O seu e-mail" class="w-full p-4 mb-4 bg-white border border-gray-200 rounded-lg text-sm">
+                    <input id="login-password" type="password" placeholder="A sua senha" class="w-full p-4 mb-4 bg-white border border-gray-200 rounded-lg text-sm">
+                    <button id="login-button" class="w-full bg-indigo-600 text-white p-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">Entrar</button>
+                    <button onclick="window.app.showScreen('signup-screen')" class="w-full mt-4 text-indigo-600 font-medium text-sm">Não tem uma conta? Registe-se</button>
+                </div>
+            </div>
+
+            <!-- Tela de Registo -->
+            <div id="signup-screen" class="screen p-6 justify-center">
+                 <div class="w-full">
+                    <h1 class="text-3xl font-bold text-gray-800 text-center">Crie a Sua Conta</h1>
+                    <p class="text-gray-500 text-center mb-8">Comece a automatizar as suas vendas</p>
+                    <div id="signup-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert"></div>
+                    <input id="signup-email" type="email" placeholder="O seu melhor e-mail" class="w-full p-4 mb-4 bg-white border border-gray-200 rounded-lg text-sm">
+                    <input id="signup-password" type="password" placeholder="Crie uma senha forte" class="w-full p-4 mb-4 bg-white border border-gray-200 rounded-lg text-sm">
+                    <button id="signup-button" class="w-full bg-indigo-600 text-white p-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">Registar</button>
+                    <button onclick="window.app.showScreen('login-screen')" class="w-full mt-4 text-indigo-600 font-medium text-sm">Já tem uma conta? Faça login</button>
+                </div>
+            </div>
+
+            <!-- Conteúdo Principal da App -->
+            <div id="main-app" class="screen flex-col">
+                <div id="app-content" class="flex-grow overflow-y-auto">
+                    <!-- Cada tela da app será injetada aqui -->
+                </div>
+                <!-- Barra de Navegação Inferior -->
+                <div id="bottom-nav-bar" class="w-full bg-white p-2 flex justify-around border-t border-gray-200">
+                    <button onclick="window.app.showScreen('dashboard')" class="nav-btn flex-1 flex flex-col items-center text-gray-500 p-2 rounded-lg hover:bg-gray-100" title="Dashboard">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        <p class="text-xs mt-1">Dashboard</p>
+                    </button>
+                    <button onclick="window.app.showScreen('inbox')" class="nav-btn flex-1 flex flex-col items-center text-gray-500 p-2 rounded-lg hover:bg-gray-100" title="Caixa de Entrada">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                        <p class="text-xs mt-1">Inbox</p>
+                    </button>
+                    <button onclick="window.app.showScreen('settings')" class="nav-btn flex-1 flex flex-col items-center text-gray-500 p-2 rounded-lg hover:bg-gray-100" title="Definições">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <p class="text-xs mt-1">Definições</p>
+                    </button>
+                </div>
+            </div>
+             <div id="toast" class="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full text-sm shadow-lg opacity-0 transition-opacity duration-300"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAeal-JrkRoq8X1do88PMxlxGMrbs9PoRg",
+            authDomain: "assistente-6bc16.firebaseapp.com",
+            databaseURL: "https://assistente-6bc16-default-rtdb.firebaseio.com",
+            projectId: "assistente-6bc16",
+            storageBucket: "assistente-6bc16.firebasestorage.app",
+            messagingSenderId: "1044611909347",
+            appId: "1:1044611909347:web:c2a3455fb8344f13f267d6",
+            measurementId: "G-VJZFVGQCEQ"
+        };
+
+        // --- Variáveis de Estado Global ---
+        let currentUser = null;
+        let unsubscribeListeners = []; // Para limpar listeners do Firestore ao trocar de tela
+        let app, auth, db; // Declarar aqui, inicializar depois
+
+        // --- Templates das Telas (HTML) ---
+        const screenTemplates = {
+            dashboard: `<div class="p-6"><h1 class="text-3xl font-bold text-gray-800">Dashboard</h1><p class="text-gray-500 mb-6">Resumo do seu assistente</p><div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-xl text-center shadow-sm"><p class="text-2xl font-bold text-indigo-600">125</p><p class="text-xs text-gray-500">Msgs Respondidas</p></div><div class="bg-white p-4 rounded-xl text-center shadow-sm"><p class="text-2xl font-bold text-indigo-600">12</p><p class="text-xs text-gray-500">Leads Gerados</p></div><div class="bg-white p-4 rounded-xl text-center shadow-sm"><p class="text-2xl font-bold text-indigo-600">25s</p><p class="text-xs text-gray-500">Tempo Médio</p></div></div><div class="bg-white p-6 rounded-xl shadow-sm"><h2 class="font-bold text-lg mb-4">Ações Rápidas</h2><button onclick="window.app.showScreen('inbox')" class="w-full bg-indigo-600 text-white p-3 mb-3 rounded-lg font-semibold text-sm">Ver Conversas</button><button onclick="window.app.showScreen('settings')" class="w-full bg-gray-200 text-gray-800 p-3 rounded-lg font-semibold text-sm">Configurar IA</button></div></div>`,
+            inbox: `<div class="p-6 pb-2"><h1 class="text-3xl font-bold text-gray-800">Caixa de Entrada</h1><p class="text-gray-500 mb-4">Conversas com clientes</p></div><div id="conversation-list" class="flex-grow"><p class="text-center text-gray-500 mt-10">A carregar conversas...</p></div>`,
+            chat: `<div id="chat-container" class="flex flex-col h-full"></div>`,
+            settings: `<div class="p-6"><h1 class="text-3xl font-bold text-gray-800">Definições</h1><p class="text-gray-500 mb-6">Ajuste o seu perfil e a sua IA</p><div id="settings-form-container"><p class="text-center text-gray-500 mt-10">A carregar definições...</p></div></div>`
+        };
+
+        // --- Lógica da Aplicação ---
+        const appLogic = {
+            // Gerenciador de Telas
+            showScreen(screenId) {
+                const allScreens = document.querySelectorAll('.screen');
+                const mainApp = document.getElementById('main-app');
+                const appContent = document.getElementById('app-content');
+                
+                this.clearFirestoreListeners();
+
+                if (['login-screen', 'signup-screen', 'loading-screen', 'config-needed-screen'].includes(screenId)) {
+                    mainApp.classList.remove('active');
+                    allScreens.forEach(s => s.id === screenId ? s.classList.add('active') : s.classList.remove('active'));
+                } else {
+                    document.getElementById('login-screen').classList.remove('active');
+                    document.getElementById('signup-screen').classList.remove('active');
+                    document.getElementById('loading-screen').classList.remove('active');
+                    document.getElementById('config-needed-screen').classList.remove('active');
+                    mainApp.classList.add('active');
+                    
+                    appContent.innerHTML = screenTemplates[screenId] || '<p>Tela não encontrada</p>';
+                    appContent.firstChild.classList.add('fade-in');
+                    this.updateNav(screenId);
+                    
+                    if (screenId === 'inbox') this.loadConversations();
+                    if (screenId === 'settings') this.loadSettings();
+                }
+            },
+
+            updateNav(activeScreenId) {
+                const navButtons = document.querySelectorAll('.nav-btn');
+                navButtons.forEach(btn => {
+                    btn.classList.remove('text-indigo-600');
+                    btn.classList.add('text-gray-500');
+                    if (btn.getAttribute('onclick').includes(activeScreenId)) {
+                        btn.classList.remove('text-gray-500');
+                        btn.classList.add('text-indigo-600');
+                    }
+                });
+            },
+            
+            showToast(message, isError = false) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = `absolute bottom-20 left-1/2 -translate-x-1/2 text-white px-6 py-3 rounded-full text-sm shadow-lg opacity-0 transition-opacity duration-300 ${isError ? 'bg-red-500' : 'bg-gray-800'}`;
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+            },
+
+            // Lógica de Autenticação
+            async handleLogin() {
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const errorDiv = document.getElementById('login-error');
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    errorDiv.classList.add('hidden');
+                } catch (error) {
+                    errorDiv.textContent = 'E-mail ou senha inválidos.';
+                    errorDiv.classList.remove('hidden');
+                }
+            },
+
+            async handleSignup() {
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const errorDiv = document.getElementById('signup-error');
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const userDocRef = doc(db, "users", userCredential.user.uid);
+                    await setDoc(userDocRef, {
+                        email: email,
+                        createdAt: new Date(),
+                        shopName: 'A Minha Nova Loja',
+                        segment: '',
+                        // Campos de conexão
+                        instagramPageId: '',
+                        pageAccessToken: '',
+                        // Automação de comentários
+                        commentAutomationEnabled: true,
+                        commentReplyText: "Olá! Enviámos mais detalhes na sua DM. 😉",
+                        // Prompt da IA
+                        aiPrompt: `Você é um atendente virtual de vendas para a loja {shopName}. Responda mensagens recebidas com tom amigável, comercial e direto. Entenda o que o cliente deseja, ofereça sugestões de produtos, envie links se disponíveis, e sempre se ofereça para chamar um atendente humano se necessário. Evite respostas longas. Seja objetivo e simpático.`
+                    });
+                    errorDiv.classList.add('hidden');
+                } catch (error) {
+                    errorDiv.textContent = 'Não foi possível criar a conta. O e-mail pode já estar em uso.';
+                    errorDiv.classList.remove('hidden');
+                }
+            },
+
+            handleLogout() {
+                signOut(auth);
+            },
+
+            // Lógica do Firestore
+            clearFirestoreListeners() {
+                unsubscribeListeners.forEach(unsub => unsub());
+                unsubscribeListeners = [];
+            },
+
+            loadConversations() {
+                const listEl = document.getElementById('conversation-list');
+                const q = query(collection(db, `users/${currentUser.uid}/conversations`), orderBy("updatedAt", "desc"));
+                
+                const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        listEl.innerHTML = '<p class="text-center text-gray-500 mt-10">Nenhuma conversa ainda.</p>';
+                        return;
+                    }
+                    listEl.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const convo = doc.data();
+                        const convoEl = document.createElement('div');
+                        convoEl.className = 'flex items-center p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50';
+                        convoEl.onclick = () => this.loadChat(doc.id, convo.customerName);
+                        convoEl.innerHTML = `<img src="https://placehold.co/48x48/E2E8F0/4A5568?text=${(convo.customerName || 'C').substring(0,2).toUpperCase()}" class="rounded-full mr-4" alt="Avatar do cliente"><div class="flex-grow"><p class="font-bold">${convo.customerName || 'Cliente'}</p><p class="text-sm text-gray-500 truncate">${convo.lastMessage || ''}</p></div><span class="text-xs text-gray-400">${convo.updatedAt ? new Date(convo.updatedAt.seconds * 1000).toLocaleTimeString('pt-PT', {hour: '2-digit', minute:'2-digit'}) : ''}</span>`;
+                        listEl.appendChild(convoEl);
+                    });
+                });
+                unsubscribeListeners.push(unsubscribe);
+            },
+            
+            loadChat(convoId, customerName) {
+                this.showScreen('chat');
+                const container = document.getElementById('chat-container');
+                container.innerHTML = `<div class="flex items-center p-3 border-b border-gray-200 bg-white sticky top-0"><button onclick="window.app.showScreen('inbox')" class="p-2 mr-2 rounded-full hover:bg-gray-100" aria-label="Voltar"><svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><p class="font-bold">${customerName}</p></div><div id="messages-list" class="flex-grow p-4 space-y-4 flex flex-col-reverse overflow-y-auto"><p class="text-center text-gray-500 mt-10">A carregar mensagens...</p></div><div class="p-3 bg-white border-t border-gray-200"><div class="flex items-center bg-gray-100 rounded-full p-2"><input placeholder="Atendimento humano indisponível" class="bg-transparent flex-grow px-3 text-sm" disabled></div></div>`;
+                
+                const messagesListEl = document.getElementById('messages-list');
+                const q = query(collection(db, `users/${currentUser.uid}/conversations/${convoId}/messages`), orderBy("timestamp", "desc"));
+
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    messagesListEl.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const bubble = document.createElement('div');
+                        bubble.className = 'flex';
+                        const content = document.createElement('div');
+                        content.className = `p-3 rounded-lg max-w-xs ${msg.sender === 'customer' ? 'bg-gray-200' : 'bg-indigo-500 text-white'}`;
+                        content.textContent = msg.text;
+                        bubble.appendChild(content);
+                        if (msg.sender === 'customer') {
+                            bubble.classList.add('justify-start');
+                        } else {
+                            bubble.classList.add('justify-end');
+                        }
+                        messagesListEl.appendChild(bubble);
+                    });
+                });
+                unsubscribeListeners.push(unsubscribe);
+            },
+
+            loadSettings() {
+                const container = document.getElementById('settings-form-container');
+                const docRef = doc(db, "users", currentUser.uid);
+                const unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        container.innerHTML = `
+                            <!-- Secção de Conexão com Instagram -->
+                            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                                <h3 class="font-bold text-lg mb-4">Conexão com Instagram</h3>
+                                <p class="text-xs text-gray-500 mb-4">Insira aqui as credenciais que obteve no Portal de Desenvolvedores da Meta. Isto é necessário para o seu assistente poder responder.</p>
+                                <div class="mb-4">
+                                    <label for="settings-instagramPageId" class="font-medium text-sm text-gray-600 mb-2 block">ID da Conta do Instagram</label>
+                                    <input id="settings-instagramPageId" type="text" value="${data.instagramPageId || '17841474514980821'}" placeholder="Ex: 17841400000000000" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label for="settings-pageAccessToken" class="font-medium text-sm text-gray-600 mb-2 block">Token de Acesso à Página</label>
+                                    <textarea id="settings-pageAccessToken" rows="4" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm" placeholder="Cole aqui o seu token longo que começa com IGAAN...">${data.pageAccessToken || 'IGAANwc2r9WhdBZAE1NVFhvY1ZAJcnhYX2VWYTQ3MTgwX25Uakd4bGxTd0w4Yy02c1BsQ0NzSlAzTmpEdFVLUHhvbURDUlBxdjZARZAkFKeml6YndUZAFh3SjlhbmVTRmtodzItTkliMW5tRFdyYUFYOTlOR3MzSGI5YzE4bHVJZAWVlYwZDZD'}</textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                                <h3 class="font-bold text-lg mb-4">Perfil da Loja</h3>
+                                <div class="mb-4">
+                                    <label for="settings-shopName" class="font-medium text-sm text-gray-600 mb-2 block">Nome da Loja</label>
+                                    <input id="settings-shopName" type="text" value="${data.shopName || ''}" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label for="settings-segment" class="font-medium text-sm text-gray-600 mb-2 block">Segmento</label>
+                                    <input id="settings-segment" type="text" value="${data.segment || ''}" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                                <h3 class="font-bold text-lg mb-2">Automação de Comentários</h3>
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-sm font-medium text-gray-700">Ativar resposta a comentários</span>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="toggle" id="settings-commentAutomationEnabled" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" ${data.commentAutomationEnabled ? 'checked' : ''}/>
+                                        <label for="settings-commentAutomationEnabled" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="settings-commentReplyText" class="font-medium text-sm text-gray-600 mb-2 block">Texto da resposta pública</label>
+                                    <input id="settings-commentReplyText" type="text" value="${data.commentReplyText || 'Olá! Enviámos mais detalhes na sua DM. 😉'}" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                                <h3 class="font-bold text-lg mb-4">Prompt da IA (Mensagens Diretas)</h3>
+                                <textarea id="settings-aiPrompt" rows="8" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">${data.aiPrompt || ''}</textarea>
+                            </div>
+                            <button onclick="window.app.handleSaveSettings()" class="w-full bg-indigo-600 text-white p-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">Guardar Alterações</button>
+                            <button onclick="window.app.handleLogout()" class="w-full mt-4 bg-red-500 text-white p-3 rounded-lg font-semibold hover:bg-red-600 transition-colors">Sair</button>
+                        `;
+                    } else {
+                        container.innerHTML = '<p>Não foi possível carregar as definições.</p>';
+                    }
+                });
+                unsubscribeListeners.push(unsubscribe);
+            },
+            
+            async handleSaveSettings() {
+                const instagramPageId = document.getElementById('settings-instagramPageId').value;
+                const pageAccessToken = document.getElementById('settings-pageAccessToken').value;
+                const shopName = document.getElementById('settings-shopName').value;
+                const segment = document.getElementById('settings-segment').value;
+                const aiPrompt = document.getElementById('settings-aiPrompt').value;
+                const commentAutomationEnabled = document.getElementById('settings-commentAutomationEnabled').checked;
+                const commentReplyText = document.getElementById('settings-commentReplyText').value;
+                
+                const userDocRef = doc(db, "users", currentUser.uid);
+                try {
+                    await updateDoc(userDocRef, { 
+                        instagramPageId,
+                        pageAccessToken,
+                        shopName, 
+                        segment, 
+                        aiPrompt,
+                        commentAutomationEnabled,
+                        commentReplyText
+                    });
+                    this.showToast('Definições guardadas com sucesso!');
+                } catch (error) {
+                    this.showToast('Erro ao guardar as definições.', true);
+                    console.error("Erro ao guardar: ", error);
+                }
+            },
+
+            // Inicialização da App
+            init() {
+                // VERIFICA A CONFIGURAÇÃO DO FIREBASE PRIMEIRO
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("SUA_API_KEY_AQUI")) {
+                    console.error("Firebase config is missing or is a placeholder.");
+                    this.showScreen('config-needed-screen'); // Mostra a nova tela de erro
+                    return; // Para a execução
+                }
+
+                // Inicializa Firebase SÓ SE a config for válida
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Anexa os handlers de clique aos botões de autenticação
+                document.getElementById('login-button').onclick = this.handleLogin;
+                document.getElementById('signup-button').onclick = this.handleSignup;
+
+                // Monitora o estado de autenticação para navegar o utilizador
+                onAuthStateChanged(auth, (user) => {
+                    this.clearFirestoreListeners();
+                    if (user) {
+                        currentUser = user;
+                        this.showScreen('dashboard');
+                    } else {
+                        currentUser = null;
+                        this.showScreen('login-screen');
+                    }
+                });
+            }
+        };
+
+        // Expõe a lógica da aplicação para o escopo global para os `onclick`
+        window.app = appLogic;
+
+        // Inicia a aplicação quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app.init();
+        });
+
+    </script>
+</body>
+</html>
